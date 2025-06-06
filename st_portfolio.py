@@ -3,7 +3,7 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime
 
-# --- Funktionen wie in deinem Script ---
+#streamlit run filepath
 
 def get_yearly_data(symbol, since="max"):
     stock = yf.Ticker(symbol)
@@ -45,17 +45,22 @@ def analyze_portfolio(stocks, weights, since="max"):
         result = f'Die Rendite deines Portfolios beträgt dieses Jahr {round(avg_portfolio_roi, 2)}%'
     else:
         result = f'Die durchschnittliche jährliche Rendite deines Portfolios seit {since} beträgt {round(avg_portfolio_roi, 2)}%'
-    return stock_dataframes, result
+
+    roi_str = ''
+    for stock, roi in avg_roi_values.items():
+      roi_str += f'{stock}: {round(roi * 100, 2)}%\n\n'
+
+    return roi_str, result
 
 def calc_profit(capital, roi, years):
     if years < 1:
         st.error("Funktion funktioniert erst ab mind. einem Jahr")
         return None
     total_roi = ((roi / 100) + 1) ** years
-    profit = capital * total_roi
+    profit = capital * (total_roi  - 1)                                            
     portfolio_wert = capital + profit
-    result = (f"Portfolio Wert: {round(portfolio_wert, 1)}\n"
-              f"Profit: {round(profit, 1)}\n"
+    result = (f"Portfolio Wert: {round(portfolio_wert, 1)}\n\n"
+              f"Profit: {round(profit, 1)}\n\n"
               f"Prozentualer Gewinn: {round(total_roi * 100, 2)}%")
     return result
 
@@ -91,9 +96,10 @@ elif selection == "Portfolio Analyse":
         try:
             stocks = [s.strip().upper() for s in stocks_input.split(",")]
             weights = [float(w.strip()) for w in weights_input.split(",")]
-            _, result = analyze_portfolio(stocks, weights, since)
+            avg_roi, result = analyze_portfolio(stocks, weights, since)
             if result:
                 st.success(result)
+                st.markdown(avg_roi)
         except Exception as e:
             st.error(f"Fehler: {e}")
 
@@ -106,4 +112,4 @@ elif selection == "Profitberechnung":
     if st.button("Profit berechnen"):
         result = calc_profit(capital, roi, years)
         if result:
-            st.success(result)
+            st.markdown(result)
